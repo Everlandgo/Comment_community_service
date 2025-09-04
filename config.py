@@ -7,7 +7,7 @@ from datetime import timedelta
 
 class Config:
     """기본 설정"""
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
+    SECRET_KEY = os.environ.get('SECRET_KEY')
     
     # 세션 설정 - 탭 종료 시 자동 로그아웃을 위해 False로 설정
     SESSION_PERMANENT = False
@@ -16,16 +16,16 @@ class Config:
     SESSION_COOKIE_SAMESITE = 'Lax'
     
     # 데이터베이스 설정 - Docker 환경에서는 mysql 서비스명 사용
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'mysql+pymysql://postuser:postpass@mysql:3306/commentdb'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f"mysql+pymysql://{os.environ.get('DB_USER', 'root')}:{os.environ.get('DB_PASSWORD', 'password')}@{os.environ.get('DB_HOST', 'mysql')}:{os.environ.get('DB_PORT', '3306')}/{os.environ.get('DB_NAME', 'commentdb')}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # AWS Cognito 설정
-    COGNITO_USER_POOL_ID = os.environ.get('COGNITO_USER_POOL_ID', 'ap-northeast-2_nneGIIVuJ')
+    COGNITO_USER_POOL_ID = os.environ.get('COGNITO_USER_POOL_ID')
     COGNITO_REGION = os.environ.get('COGNITO_REGION', 'ap-northeast-2')
-    COGNITO_CLIENT_ID = os.environ.get('COGNITO_CLIENT_ID', '2v16jp80j40neuuhtlgg8t')
+    COGNITO_CLIENT_ID = os.environ.get('COGNITO_CLIENT_ID')
     
     # JWT 설정
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key'
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     
     # 서비스 설정

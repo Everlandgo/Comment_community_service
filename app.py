@@ -7,7 +7,6 @@ import os
 import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_swagger_ui import get_swaggerui_blueprint
 from werkzeug.exceptions import HTTPException, NotFound
 from flask_migrate import Migrate
 from sqlalchemy import text
@@ -57,37 +56,10 @@ def create_app(config_class=None):
             logger.warning("Application will continue without database initialization")
             # 연결 실패 시에도 애플리케이션은 계속 실행
 
-    # Swagger UI 설정
-    SWAGGER_URL = '/api/docs'
-    API_URL = '/static/swagger.json'
-    swaggerui_blueprint = get_swaggerui_blueprint(
-        SWAGGER_URL,
-        API_URL,
-        config={'app_name': "Comment Service API"}
-    )
-    app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
     # 블루프린트 등록
     app.register_blueprint(bp, url_prefix='/api/v1')
 
-    # OPTIONS preflight 요청 처리
-    @app.route('/api/v1/posts/<path:post_id>/comments', methods=['OPTIONS'])
-    def handle_comments_options(post_id):
-        response = jsonify({'message': 'OK'})
-        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        response.headers.add('Access-Control-Max-Age', '86400')
-        return response
-
-    @app.route('/api/v1/comments/<path:comment_id>', methods=['OPTIONS'])
-    def handle_comment_options(comment_id):
-        response = jsonify({'message': 'OK'})
-        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:3000')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-        response.headers.add('Access-Control-Max-Age', '86400')
-        return response
 
     # 전역 에러 핸들러
     @app.errorhandler(HTTPException)

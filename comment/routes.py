@@ -351,13 +351,6 @@ def create_comment(post_id):
         
         logger.info(f"댓글 작성 성공 - comment_id: {comment.id}")
         
-        # Post 서비스에 댓글 수 업데이트 알림 (추가됨)
-        try:
-            import requests
-            requests.post(f"http://post-service:5000/api/v1/posts/{post_id}/update-comment-count", timeout=5)
-            logger.info(f"Post 서비스 댓글 수 업데이트 알림 전송 완료 - post_id: {post_id}")
-        except Exception as e:
-            logger.warning(f"Post 서비스 알림 실패 (무시됨): {e}")
         
         return api_response(data=comment.to_dict(), message="댓글이 작성되었습니다", status_code=201)
         
@@ -428,13 +421,6 @@ def delete_comment(comment_id):
         # 댓글 삭제
         CommentService.delete_comment(comment_id)
         
-        # Post 서비스에 댓글 수 업데이트 알림 (추가됨)
-        try:
-            import requests
-            requests.post(f"http://post-service:5000/api/v1/posts/{comment.post_id}/update-comment-count", timeout=5)
-            logger.info(f"Post 서비스 댓글 수 업데이트 알림 전송 완료 - post_id: {comment.post_id}")
-        except Exception as e:
-            logger.warning(f"Post 서비스 알림 실패 (무시됨): {e}")
         
         return api_response(message="댓글이 삭제되었습니다")
         
