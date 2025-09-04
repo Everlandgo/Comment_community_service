@@ -1,0 +1,18 @@
+# Flask Dependencies
+flask==3.0.0
+flask-cors==4.0.0
+flask-sqlalchemy==3.1.1
+flask-migrate==4.0.5
+flask-swagger-ui==4.11.1
+
+# Existing Dependencies
+sqlalchemy==2.0.43
+PyJWT==2.9.0
+requests==2.32.3
+python-dotenv==1.1.1
+pymysql==1.1.0
+cryptography==41.0.7
+alembic==1.16.4
+
+# Additional Flask Dependencies
+werkzeug==3.0.1
