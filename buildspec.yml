@@ -2,13 +2,13 @@ version: 0.2
 
 env:
   variables:
-    AWS_DEFAULT_REGION: ap-northeast-2
-    REPO_NAME: comment-service
-    APP_NAME: comment-service
-    K8S_NAMESPACE: comment-service
-    K8S_CLUSTER_NAME: scrumptious-disco-party
-    ACCOUNT_ID: 245040175511
-    ECR_REPO_URI: 245040175511.dkr.ecr.ap-northeast-2.amazonaws.com/comment-service
+    AWS_DEFAULT_REGION: "ap-northeast-2"
+    REPO_NAME: "comment-service"
+    APP_NAME: "comment-service"
+    K8S_NAMESPACE: "comment-service"
+    K8S_CLUSTER_NAME: "scrumptious-disco-party"
+    ACCOUNT_ID: "245040175511"
+    ECR_REPO_URI: "245040175511.dkr.ecr.ap-northeast-2.amazonaws.com/comment-service"
 
 phases:
   pre_build:
