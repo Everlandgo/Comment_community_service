@@ -1,5 +1,5 @@
 # ===========================
-# 06-cicd.tf (GitHub 연동 + ECR 추가)
+# 06-cicd.tf (GitHub 연동 + ECR + CodeBuild)
 # ===========================
 
 # ---------------------------
@@ -83,6 +83,7 @@ resource "aws_iam_role" "codebuild" {
   assume_role_policy = data.aws_iam_policy_document.cb_trust.json
 }
 
+# 최소 권한 정책
 data "aws_iam_policy_document" "cb_policy" {
   statement {
     actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
@@ -93,7 +94,7 @@ data "aws_iam_policy_document" "cb_policy" {
     resources = [aws_s3_bucket.artifacts.arn, "${aws_s3_bucket.artifacts.arn}/*"]
   }
   statement {
-    actions   = [
+    actions = [
       "ecr:GetAuthorizationToken",
       "ecr:BatchCheckLayerAvailability",
       "ecr:InitiateLayerUpload",
@@ -107,6 +108,10 @@ data "aws_iam_policy_document" "cb_policy" {
   }
   statement {
     actions   = ["eks:DescribeCluster", "eks:ListClusters"]
+    resources = ["*"]
+  }
+  statement {
+    actions   = ["iam:PassRole"]
     resources = ["*"]
   }
 }

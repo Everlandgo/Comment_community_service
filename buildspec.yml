@@ -1,5 +1,15 @@
 version: 0.2
 
+env:
+  variables:
+    AWS_DEFAULT_REGION: ap-northeast-2
+    REPO_NAME: comment-service
+    APP_NAME: comment-service
+    K8S_NAMESPACE: comment-service
+    K8S_CLUSTER_NAME: scrumptious-disco-party
+    ACCOUNT_ID: 245040175511
+    ECR_REPO_URI: 245040175511.dkr.ecr.ap-northeast-2.amazonaws.com/comment-service
+
 phases:
   pre_build:
     commands:
@@ -7,98 +17,87 @@ phases:
       - echo "현재 디렉토리: $(pwd)"
       - echo "AWS 리전: $AWS_DEFAULT_REGION"
       - echo "계정 ID: $ACCOUNT_ID"
-      
+
       # ECR 로그인
       - echo "ECR에 로그인 중..."
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPO_URI
+
       # 이미지 태그 생성
       - echo "이미지 태그 생성 중..."
-      - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - export ECR_REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/comment-service
-      - export IMAGE_URI=$ECR_REPOSITORY_URI:$IMAGE_TAG
-      - export IMAGE_URI_LATEST=$ECR_REPOSITORY_URI:latest
-      
-      # 환경 변수 출력
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_URI=$ECR_REPO_URI:$IMAGE_TAG
+      - IMAGE_URI_LATEST=$ECR_REPO_URI:latest
+
       - echo "이미지 URI: $IMAGE_URI"
       - echo "Latest URI: $IMAGE_URI_LATEST"
-      - echo "ECR 리포지토리: $ECR_REPOSITORY_URI"
-      
+      - echo "ECR 리포지토리: $ECR_REPO_URI"
+
       # ECR 리포지토리 확인
       - echo "ECR 리포지토리 확인 중..."
-      - aws ecr describe-repositories --repository-names comment-service --region $AWS_DEFAULT_REGION
+      - aws ecr describe-repositories --repository-names $REPO_NAME --region $AWS_DEFAULT_REGION
 
   build:
     commands:
       - echo "=== Build 단계 시작 ==="
-      
-      # Docker 이미지 빌드
       - echo "Docker 이미지 빌드 중..."
       - docker build -t $IMAGE_URI -t $IMAGE_URI_LATEST .
-      
-      # 빌드된 이미지 정보 출력
       - echo "빌드된 이미지 목록:"
-      - docker images | grep comment-service
+      - docker images | grep $REPO_NAME
 
   post_build:
     commands:
       - echo "=== Post-build 단계 시작 ==="
-      
-      # Docker 이미지를 ECR에 푸시
       - echo "Docker 이미지를 ECR에 푸시 중..."
       - docker push $IMAGE_URI
       - docker push $IMAGE_URI_LATEST
-      
+
       # imagedefinitions.json 생성 (CodePipeline 배포용)
       - echo "imagedefinitions.json 생성 중..."
-      - echo '[{"name":"comment-service","imageUri":"'$IMAGE_URI'"}]' > imagedefinitions.json
+      - echo '[{"name":"'$APP_NAME'","imageUri":"'$IMAGE_URI'"}]' > imagedefinitions.json
       - echo "imagedefinitions.json 내용:"
       - cat imagedefinitions.json
-      
-      # EKS 클러스터 연결 설정
+
+      # EKS 클러스터 연결
       - echo "EKS 클러스터 연결 설정 중..."
       - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $K8S_CLUSTER_NAME
-      
+
       # kubectl 버전 확인
       - echo "kubectl 버전:"
       - kubectl version --client
-      
+
       # 네임스페이스 생성 (존재하지 않는 경우)
       - echo "네임스페이스 확인/생성 중..."
-      - kubectl create namespace comment-service --dry-run=client -o yaml | kubectl apply -f -
-      
+      - kubectl create namespace $K8S_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+
       # Kubernetes 매니페스트 파일에서 이미지 URI 업데이트
       - echo "Kubernetes 매니페스트 파일 업데이트 중..."
-      - sed -i "s|245040175511.dkr.ecr.ap-northeast-2.amazonaws.com/comment-service:latest|$IMAGE_URI|g" k8s/deployment.yaml
-      
-      # 업데이트된 매니페스트 내용 확인
+      - sed -i "s|$ECR_REPO_URI:latest|$IMAGE_URI|g" k8s/deployment.yaml
       - echo "업데이트된 deployment.yaml 내용:"
       - grep -A 5 -B 5 "image:" k8s/deployment.yaml
-      
+
       # EKS에 배포
       - echo "EKS에 배포 중..."
       - kubectl apply -f k8s/deployment.yaml
-      
+
       # 배포 상태 확인
       - echo "배포 상태 확인 중..."
-      - kubectl get deployments -n comment-service
-      - kubectl get pods -n comment-service
-      - kubectl get services -n comment-service
-      
+      - kubectl get deployments -n $K8S_NAMESPACE
+      - kubectl get pods -n $K8S_NAMESPACE
+      - kubectl get services -n $K8S_NAMESPACE
+
       # 배포 완료 대기 및 롤아웃 확인
       - echo "배포 완료 대기 중..."
-      - kubectl rollout status deployment/comment-service-deployment -n comment-service --timeout=300s
-      
-      # 최종 상태 확인
+      - kubectl rollout status deployment/$APP_NAME-deployment -n $K8S_NAMESPACE --timeout=300s
+
       - echo "=== 최종 배포 상태 ==="
-      - kubectl get all -n comment-service
+      - kubectl get all -n $K8S_NAMESPACE
       - echo "=== 배포 완료 ==="
 
 artifacts:
   files:
     - imagedefinitions.json
     - k8s/deployment.yaml
-  name: build-output-$(date +%Y-%m-%d-%H-%M-%S)
+  name: build-output
 
 cache:
   paths:
