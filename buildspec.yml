@@ -1,3 +1,4 @@
+
 version: 0.2
 
 env:
@@ -17,58 +18,55 @@ phases:
       - echo "현재 디렉토리 - $(pwd)"
       - echo "AWS 리전 - $AWS_DEFAULT_REGION"
       - echo "계정 ID - $ACCOUNT_ID"
-      - echo "ECR에 로그인 중..."
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPO_URI
+      - echo "ECR 로그인 중..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin "$ECR_REPO_URI"
       - echo "이미지 태그 생성 중..."
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_URI=$ECR_REPO_URI:$IMAGE_TAG
-      - IMAGE_URI_LATEST=$ECR_REPO_URI:latest
-
-      - echo "이미지 URI - $IMAGE_URI"
-      - echo "Latest URI - $IMAGE_URI_LATEST"
-      - echo "ECR 리포지토리 - $ECR_REPO_URI"
+      - IMAGE_TAG="$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)"
+      - IMAGE_URI="$ECR_REPO_URI:$IMAGE_TAG"
+      - IMAGE_URI_LATEST="$ECR_REPO_URI:latest"
+      - echo "IMAGE_URI=$IMAGE_URI"
+      - echo "IMAGE_URI_LATEST=$IMAGE_URI_LATEST"
       - echo "ECR 리포지토리 확인 중..."
-      - aws ecr describe-repositories --repository-names $REPO_NAME --region $AWS_DEFAULT_REGION
+      - aws ecr describe-repositories --repository-names "$REPO_NAME" --region $AWS_DEFAULT_REGION || echo "리포지토리 없음, 생성 필요"
 
   build:
     commands:
       - echo "=== Build 단계 시작 ==="
       - echo "Docker 이미지 빌드 중..."
-      - docker build -t $IMAGE_URI -t $IMAGE_URI_LATEST .
-      - echo "빌드된 이미지 목록"
-      - docker images | grep $REPO_NAME
+      - docker build -t "$IMAGE_URI" -t "$IMAGE_URI_LATEST" .
+      - echo "빌드된 이미지 목록 확인..."
+      - docker images | grep "$REPO_NAME"
 
   post_build:
     commands:
       - echo "=== Post-build 단계 시작 ==="
       - echo "Docker 이미지를 ECR에 푸시 중..."
-      - docker push $IMAGE_URI
-      - docker push $IMAGE_URI_LATEST
+      - docker push "$IMAGE_URI"
+      - docker push "$IMAGE_URI_LATEST"
       - echo "imagedefinitions.json 생성 중..."
-      - echo '[{"name":"'$APP_NAME'","imageUri":"'$IMAGE_URI'"}]' > imagedefinitions.json
-      - echo "imagedefinitions.json 내용"
+      - echo "[{\"name\":\"$APP_NAME\",\"imageUri\":\"$IMAGE_URI\"}]" > imagedefinitions.json
+      - echo "imagedefinitions.json 내용:"
       - cat imagedefinitions.json
       - echo "EKS 클러스터 연결 설정 중..."
-      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $K8S_CLUSTER_NAME
-      - echo "kubectl 버전"
+      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name "$K8S_CLUSTER_NAME"
+      - echo "kubectl 버전 확인..."
       - kubectl version --client
       - echo "네임스페이스 확인/생성 중..."
-      - kubectl create namespace $K8S_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-      - echo "Kubernetes 매니페스트 파일 업데이트 중..."
+      - kubectl create namespace "$K8S_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+      - echo "Kubernetes 매니페스트 업데이트..."
       - sed -i "s|$ECR_REPO_URI:latest|$IMAGE_URI|g" k8s/deployment.yaml
-      - echo "업데이트된 deployment.yaml 내용"
-      - grep -A 5 -B 5 "image:" k8s/deployment.yaml
+      - echo "업데이트된 deployment.yaml 확인..."
+      - grep -A 5 -B 5 "image:" k8s/deployment.yaml || true
       - echo "EKS에 배포 중..."
       - kubectl apply -f k8s/deployment.yaml
       - echo "배포 상태 확인 중..."
-      - kubectl get deployments -n $K8S_NAMESPACE
-      - kubectl get pods -n $K8S_NAMESPACE
-      - kubectl get services -n $K8S_NAMESPACE
-      - echo "배포 완료 대기 중..."
-      - kubectl rollout status deployment/$APP_NAME-deployment -n $K8S_NAMESPACE --timeout=300s
-
+      - kubectl get deployments -n "$K8S_NAMESPACE"
+      - kubectl get pods -n "$K8S_NAMESPACE"
+      - kubectl get services -n "$K8S_NAMESPACE"
+      - echo "배포 완료 대기..."
+      - kubectl rollout status deployment/"$APP_NAME"-deployment -n "$K8S_NAMESPACE" --timeout=300s
       - echo "=== 최종 배포 상태 ==="
-      - kubectl get all -n $K8S_NAMESPACE
+      - kubectl get all -n "$K8S_NAMESPACE"
       - echo "=== 배포 완료 ==="
 
 artifacts:
