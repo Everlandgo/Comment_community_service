@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: comment-service
-          image: your-ecr-registry/comment-service:latest # CI/CD 파이프라인에서 최신 이미지로 교체됩니다.
+          image: 245040175511.dkr.ecr.ap-northeast-2.amazonaws.com/comment-service:latest # CI/CD 파이프라인에서 최신 이미지로 교체됩니다.
           ports:
             - containerPort: 8083
           env:

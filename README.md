@@ -4,7 +4,33 @@
 
 ## 🚀 배포 방법
 
-### 1. 환경변수 설정
+### 1. CI/CD 파이프라인 (권장)
+
+이 프로젝트는 AWS CodeBuild와 CodePipeline을 사용한 자동화된 CI/CD 파이프라인을 지원합니다.
+
+#### buildspec.yml 구성
+- **Pre-build**: ECR 로그인, 이미지 태그 생성, 환경 변수 설정
+- **Build**: Docker 이미지 빌드 및 태깅 (커밋 해시 + latest)
+- **Post-build**: ECR 푸시, imagedefinitions.json 생성, EKS 배포
+
+#### 필요한 환경 변수
+```bash
+# CodeBuild 환경 변수
+AWS_DEFAULT_REGION=ap-northeast-2
+ACCOUNT_ID=your-aws-account-id
+K8S_CLUSTER_NAME=my-eks-cluster
+K8S_NAMESPACE=comment-service
+```
+
+#### 배포 과정
+1. GitHub에 코드 푸시
+2. CodePipeline이 자동으로 트리거
+3. CodeBuild가 buildspec.yml 실행
+4. Docker 이미지 빌드 → ECR 푸시 → EKS 배포
+
+### 2. 수동 배포
+
+#### 환경변수 설정
 
 다음 환경변수들을 설정해야 합니다:
 
@@ -31,7 +57,7 @@ USER_SERVICE_URL=http://user-service:8081
 POST_SERVICE_URL=http://post-service:8082
 ```
 
-### 2. Docker 빌드 및 실행
+#### Docker 빌드 및 실행
 
 ```bash
 # Docker 이미지 빌드
