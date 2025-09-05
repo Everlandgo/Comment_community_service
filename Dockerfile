@@ -6,7 +6,11 @@ WORKDIR /app
 # 시스템 패키지 업데이트 및 필요한 패키지 설치
 RUN apt-get update && apt-get install -y \
     gcc \
+    wget \
     && rm -rf /var/lib/apt/lists/*
+
+# RDS CA Bundle 다운로드
+RUN wget https://s3.amazonaws.com/rds-downloads/rds-ca-2019-root.pem -O /app/rds-ca-bundle.pem
 
 # Python 의존성 파일 복사 및 설치
 COPY requirements.txt .

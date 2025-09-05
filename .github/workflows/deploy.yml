@@ -1,0 +1,63 @@
+name: Deploy Comment Service to EKS
+
+on:
+  push:
+    branches:
+      - main # main 브랜치에 푸시될 때 워크플로우 실행
+      - develop
+
+env:
+  # AWS ECR 레지스트리 정보
+  ECR_REPOSITORY: comment-service
+  # AWS 리전 (e.g., ap-northeast-2)
+  AWS_REGION: ap-northeast-2
+  # Kubernetes 클러스터 이름
+  EKS_CLUSTER_NAME: my-eks-cluster
+  # 도커 이미지의 고유한 태그 (커밋 해시)
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Get kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+      - name: Deploy to EKS
+        run: |
+          # 네임스페이스 생성 (이미 존재하면 무시)
+          kubectl create namespace comment-service --dry-run=client -o yaml | kubectl apply -f -
+          
+          # 배포 파일의 이미지 태그를 최신 커밋 해시로 교체
+          sed -i "s|your-ecr-registry/comment-service:latest|$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|g" k8s/deployment.yaml
+          
+          # Kubernetes에 배포 적용
+          kubectl apply -f k8s/deployment.yaml
