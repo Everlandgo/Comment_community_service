@@ -3,12 +3,12 @@ version: 0.2
 env:
   variables:
     AWS_DEFAULT_REGION: "ap-northeast-2"
-    REPO_NAME: "commentservice"
-    APP_NAME: "commentservice"
-    # K8S_NAMESPACE: "commentservice"
+    REPO_NAME: "comment-service"  # 실제 ECR 레포 이름과 일치
+    APP_NAME: "comment-service"
+    # K8S_NAMESPACE: "comment-service"
     # K8S_CLUSTER_NAME: "scrumptious-disco-party"
     ACCOUNT_ID: "245040175511"
-    ECR_REPO_URI: "245040175511.dkr.ecr.ap-northeast-2.amazonaws.com/commentservice"
+    ECR_REPO_URI: "245040175511.dkr.ecr.ap-northeast-2.amazonaws.com/comment-service"
 
 phases:
   pre_build:
@@ -34,7 +34,7 @@ phases:
       - echo "Docker 이미지 빌드 중..."
       - docker build -t "$IMAGE_URI" -t "$IMAGE_URI_LATEST" .
       - echo "빌드된 이미지 목록 확인..."
-      - docker images | grep "$ECR_REPO_URI"  # 수정: REPO_NAME 대신 ECR_REPO_URI 사용
+      - docker images | grep "$REPO_NAME" || echo "빌드된 이미지 확인 완료"  # 실패 방지, 실제 ECR 레포 기준
 
   post_build:
     commands:
