@@ -1,5 +1,5 @@
 # ===========================
-# 06-cicd.tf (GitHub 연결 + ECR + CodeBuild + CodePipeline)
+# 06-cicd.tf (GitHub 연결 + ECR + CodeBuild + CodePipeline + EKS 배포)
 # ===========================
 
 # ---------------------------
@@ -35,15 +35,26 @@ variable "github_branch" {
   default = "main"
 }
 
+# EKS 관련 변수
+variable "eks_cluster_name" {
+  type    = string
+  default = "happy-synth-ladybug"
+}
+
+variable "k8s_namespace" {
+  type    = string
+  default = "comment-service"
+}
+
 # ---------------------------
-# S3 버킷 (karina-winter로 통일)
+# S3 버킷 (아티팩트 저장용)
 # ---------------------------
 data "aws_s3_bucket" "artifacts" {
   bucket = "karina-winter"
 }
 
 # ---------------------------
-# 기존 GitHub 연결 (CodeStar Connection)
+# GitHub 연결
 # ---------------------------
 data "aws_codestarconnections_connection" "github" {
   arn = "arn:aws:codestar-connections:ap-northeast-2:245040175511:connection/8eb2b6fd-9dd2-4214-994e-a0b24f3fe2c6"
@@ -52,7 +63,7 @@ data "aws_codestarconnections_connection" "github" {
 data "aws_caller_identity" "current" {}
 
 # ---------------------------
-# CodeBuild IAM Role 생성
+# CodeBuild IAM Role
 # ---------------------------
 data "aws_iam_policy_document" "cb_trust" {
   statement {
@@ -71,14 +82,16 @@ resource "aws_iam_role" "codebuild" {
 
 data "aws_iam_policy_document" "cb_policy" {
   statement {
-    sid       = "CloudWatchLogs"
-    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
-    resources = ["arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:*"]
+    sid     = "CloudWatchLogs"
+    actions = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = [
+      "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:*"
+    ]
   }
 
   statement {
-    sid = "ArtifactsS3Access"
-    actions   = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
+    sid     = "S3Access"
+    actions = ["s3:GetObject","s3:PutObject","s3:ListBucket"]
     resources = [
       "arn:aws:s3:::${data.aws_s3_bucket.artifacts.id}",
       "arn:aws:s3:::${data.aws_s3_bucket.artifacts.id}/*"
@@ -86,7 +99,7 @@ data "aws_iam_policy_document" "cb_policy" {
   }
 
   statement {
-    sid = "ECRPermissions"
+    sid = "ECRAccess"
     actions = [
       "ecr:GetAuthorizationToken",
       "ecr:BatchCheckLayerAvailability",
@@ -101,8 +114,20 @@ data "aws_iam_policy_document" "cb_policy" {
   }
 
   statement {
-    sid = "PassRole"
-    actions   = ["iam:PassRole"]
+    sid = "EKSAccess"
+    actions = [
+      "eks:DescribeCluster",
+      "eks:ListClusters",
+      "eks:UpdateKubeconfig"
+    ]
+    resources = [
+      "arn:aws:eks:${var.region}:${data.aws_caller_identity.current.account_id}:cluster/${var.eks_cluster_name}"
+    ]
+  }
+
+  statement {
+    sid     = "IAMPassRole"
+    actions = ["iam:PassRole"]
     resources = ["*"]
   }
 }
@@ -134,9 +159,25 @@ resource "aws_codebuild_project" "build" {
       name  = "AWS_DEFAULT_REGION"
       value = var.region
     }
+
     environment_variable {
       name  = "ECR_REPO_URI"
       value = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/comment-service"
+    }
+
+    environment_variable {
+      name  = "K8S_CLUSTER_NAME"
+      value = var.eks_cluster_name
+    }
+
+    environment_variable {
+      name  = "K8S_NAMESPACE"
+      value = var.k8s_namespace
+    }
+
+    environment_variable {
+      name  = "REPO_NAME"
+      value = "comment-service"
     }
   }
 
@@ -150,7 +191,10 @@ resource "aws_codebuild_project" "build" {
     }
   }
 
-  tags = { Project = var.project, Env = var.env }
+  tags = {
+    Project = var.project
+    Env     = var.env
+  }
 }
 
 # ---------------------------
@@ -159,6 +203,7 @@ resource "aws_codebuild_project" "build" {
 resource "aws_ecr_repository" "comment_service" {
   name                 = "comment-service"
   image_tag_mutability = "MUTABLE"
+
   image_scanning_configuration {
     scan_on_push = true
   }
@@ -174,7 +219,7 @@ output "ecr_repository_uri" {
 }
 
 # ---------------------------
-# CodePipeline IAM Role 생성 (권한 충분히 포함)
+# CodePipeline IAM Role
 # ---------------------------
 data "aws_iam_policy_document" "cp_trust" {
   statement {
@@ -193,31 +238,35 @@ resource "aws_iam_role" "codepipeline" {
 
 data "aws_iam_policy_document" "cp_policy" {
   statement {
-    sid = "S3BucketObjects"
-    actions   = ["s3:GetObject", "s3:GetObjectVersion", "s3:PutObject", "s3:DeleteObject"]
-    resources = [
-      "arn:aws:s3:::${data.aws_s3_bucket.artifacts.id}/*"
-    ]
+    sid     = "S3Objects"
+    actions = ["s3:GetObject","s3:GetObjectVersion","s3:PutObject","s3:DeleteObject"]
+    resources = ["arn:aws:s3:::${data.aws_s3_bucket.artifacts.id}/*"]
   }
 
   statement {
-    sid = "S3ListBucket"
-    actions   = ["s3:ListBucket", "s3:GetBucketLocation"]
-    resources = [
-      "arn:aws:s3:::${data.aws_s3_bucket.artifacts.id}"
-    ]
+    sid     = "S3List"
+    actions = ["s3:ListBucket","s3:GetBucketLocation"]
+    resources = ["arn:aws:s3:::${data.aws_s3_bucket.artifacts.id}"]
   }
 
   statement {
-    sid = "CodeBuildStart"
-    actions   = ["codebuild:BatchGetBuilds", "codebuild:StartBuild"]
+    sid       = "CodeBuildStart"
+    actions   = ["codebuild:BatchGetBuilds","codebuild:StartBuild"]
     resources = [aws_codebuild_project.build.arn]
   }
 
   statement {
-    sid = "UseCodeStarConnection"
+    sid       = "UseCodeStarConnection"
     actions   = ["codestar-connections:UseConnection"]
     resources = [data.aws_codestarconnections_connection.github.arn]
+  }
+
+  statement {
+    sid     = "EKSAccessForPipeline"
+    actions = ["eks:DescribeCluster","eks:ListClusters","eks:AccessKubernetesApi"]
+    resources = [
+      "arn:aws:eks:${var.region}:${data.aws_caller_identity.current.account_id}:cluster/${var.eks_cluster_name}"
+    ]
   }
 }
 
@@ -241,6 +290,7 @@ resource "aws_codepipeline" "this" {
 
   stage {
     name = "Source"
+
     action {
       name             = "GithubSource"
       category         = "Source"
@@ -248,6 +298,7 @@ resource "aws_codepipeline" "this" {
       provider         = "CodeStarSourceConnection"
       version          = "1"
       output_artifacts = ["source_output"]
+
       configuration = {
         ConnectionArn    = data.aws_codestarconnections_connection.github.arn
         FullRepositoryId = "${var.github_owner}/${var.github_repo}"
@@ -258,6 +309,7 @@ resource "aws_codepipeline" "this" {
 
   stage {
     name = "Build"
+
     action {
       name             = "DockerBuild"
       category         = "Build"
@@ -266,26 +318,53 @@ resource "aws_codepipeline" "this" {
       version          = "1"
       input_artifacts  = ["source_output"]
       output_artifacts = ["build_output"]
+
       configuration = {
         ProjectName = aws_codebuild_project.build.name
       }
     }
   }
 
-  tags = { Project = var.project, Env = var.env }
+  tags = {
+    Project = var.project
+    Env     = var.env
+  }
 }
 
 # ---------------------------
-# EKS 관련 리소스는 주석 처리
+# EKS RBAC 매핑 (CodeBuild/CodePipeline)
 # ---------------------------
-/*
-# CodePipeline
-resource "aws_eks_access_entry" "cp" { ... }
-resource "aws_eks_access_policy_association" "cp_admin" { ... }
-# CodeBuild
-resource "aws_eks_access_entry" "cb" { ... }
-resource "aws_eks_access_policy_association" "cb_admin" { ... }
-*/
+resource "aws_eks_access_entry" "cp" {
+  cluster_name  = var.eks_cluster_name
+  principal_arn = aws_iam_role.codepipeline.arn
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "cp_admin" {
+  cluster_name  = var.eks_cluster_name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = aws_iam_role.codepipeline.arn
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
+resource "aws_eks_access_entry" "cb" {
+  cluster_name  = var.eks_cluster_name
+  principal_arn = aws_iam_role.codebuild.arn
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "cb_admin" {
+  cluster_name  = var.eks_cluster_name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = aws_iam_role.codebuild.arn
+
+  access_scope {
+    type = "cluster"
+  }
+}
 
 # ---------------------------
 # 출력
@@ -296,4 +375,12 @@ output "pipeline_name" {
 
 output "codestar_connection_arn" {
   value = data.aws_codestarconnections_connection.github.arn
+}
+
+output "codebuild_role_arn" {
+  value = aws_iam_role.codebuild.arn
+}
+
+output "codepipeline_role_arn" {
+  value = aws_iam_role.codepipeline.arn
 }
