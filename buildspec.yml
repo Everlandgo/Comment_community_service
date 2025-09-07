@@ -5,8 +5,8 @@ env:
     AWS_DEFAULT_REGION: "ap-northeast-2"
     REPO_NAME: "comment-service"  # 실제 ECR 레포 이름과 일치
     APP_NAME: "comment-service"
-    # K8S_NAMESPACE: "comment-service"
-    # K8S_CLUSTER_NAME: "scrumptious-disco-party"
+    K8S_NAMESPACE: "comment-service"
+    K8S_CLUSTER_NAME: "happy-synth-ladybug"
     ACCOUNT_ID: "245040175511"
     ECR_REPO_URI: "245040175511.dkr.ecr.ap-northeast-2.amazonaws.com/comment-service"
 
@@ -14,9 +14,9 @@ phases:
   pre_build:
     commands:
       - echo "=== Pre-build 단계 시작 ==="
-      - echo "현재 디렉토리 - $(pwd)"
-      - echo "AWS 리전 - $AWS_DEFAULT_REGION"
-      - echo "계정 ID - $ACCOUNT_ID"
+      - echo "현재 디렉토리: $(pwd)"
+      - echo "AWS 리전: $AWS_DEFAULT_REGION"
+      - echo "계정 ID: $ACCOUNT_ID"
       - echo "ECR 로그인 중..."
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin "$ECR_REPO_URI"
       - echo "이미지 태그 생성 중..."
@@ -25,16 +25,14 @@ phases:
       - IMAGE_URI_LATEST="$ECR_REPO_URI:latest"
       - echo "IMAGE_URI=$IMAGE_URI"
       - echo "IMAGE_URI_LATEST=$IMAGE_URI_LATEST"
-      - echo "ECR 리포지토리 확인 중..."
-      - aws ecr describe-repositories --repository-names "$REPO_NAME" --region $AWS_DEFAULT_REGION || echo "리포지토리 없음, 생성 필요"
 
   build:
     commands:
       - echo "=== Build 단계 시작 ==="
       - echo "Docker 이미지 빌드 중..."
       - docker build -t "$IMAGE_URI" -t "$IMAGE_URI_LATEST" .
-      - echo "빌드된 이미지 목록 확인..."
-      - docker images | grep "$REPO_NAME" || echo "빌드된 이미지 확인 완료"  # 실패 방지, 실제 ECR 레포 기준
+      - echo "빌드된 이미지 확인..."
+      - docker images
 
   post_build:
     commands:
@@ -46,33 +44,33 @@ phases:
       - echo "[{\"name\":\"$APP_NAME\",\"imageUri\":\"$IMAGE_URI\"}]" > imagedefinitions.json
       - echo "imagedefinitions.json 내용:"
       - cat imagedefinitions.json
-      # EKS 관련 단계는 주석 처리
-      #- echo "EKS 클러스터 연결 설정 중..."
-      #- aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name "$K8S_CLUSTER_NAME"
-      #- echo "kubectl 버전 확인..."
-      #- kubectl version --client
-      #- echo "네임스페이스 확인/생성 중..."
-      #- kubectl create namespace "$K8S_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-      #- echo "Kubernetes 매니페스트 업데이트..."
-      #- sed -i "s|$ECR_REPO_URI:latest|$IMAGE_URI|g" k8s/deployment.yaml
-      #- echo "업데이트된 deployment.yaml 확인..."
-      #- grep -A 5 -B 5 "image:" k8s/deployment.yaml || true
-      #- echo "EKS에 배포 중..."
-      #- kubectl apply -f k8s/deployment.yaml
-      #- echo "배포 상태 확인 중..."
-      #- kubectl get deployments -n "$K8S_NAMESPACE"
-      #- kubectl get pods -n "$K8S_NAMESPACE"
-      #- kubectl get services -n "$K8S_NAMESPACE"
-      #- echo "배포 완료 대기..."
-      #- kubectl rollout status deployment/"$APP_NAME"-deployment -n "$K8S_NAMESPACE" --timeout=300s
-      #- echo "=== 최종 배포 상태 ==="
-      #- kubectl get all -n "$K8S_NAMESPACE"
-      #- echo "=== 배포 완료 ==="
+
+      # EKS 배포 단계
+      - echo "EKS 클러스터 연결 설정 중..."
+      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name "$K8S_CLUSTER_NAME"
+      - echo "kubectl 버전 확인..."
+      - kubectl version --client
+      - echo "네임스페이스 확인/생성 중..."
+      - kubectl create namespace "comment-service" --dry-run=client -o yaml | kubectl apply -f -
+      - echo "Kubernetes 매니페스트 업데이트..."
+      - sed -i "s|$ECR_REPO_URI:latest|$IMAGE_URI|g" k8s/deployment.yaml
+      - echo "업데이트된 deployment.yaml 확인..."
+      - grep -A 5 -B 5 "image:" k8s/deployment.yaml
+      - echo "EKS에 배포 중..."
+      - kubectl apply -f k8s/deployment.yaml
+      - echo "배포 상태 확인 중..."
+      - kubectl get deployments -n "$K8S_NAMESPACE"
+      - kubectl get pods -n "$K8S_NAMESPACE"
+      - kubectl get services -n "$K8S_NAMESPACE"
+      - echo "배포 완료 대기..."
+      - kubectl rollout status deployment/"$APP_NAME"-deployment -n "$K8S_NAMESPACE" --timeout=300s
+      - echo "=== 최종 배포 상태 ==="
+      - kubectl get all -n "$K8S_NAMESPACE"
+      - echo "=== 배포 완료 ==="
 
 artifacts:
   files:
     - imagedefinitions.json
-    # - k8s/deployment.yaml   # EKS 배포 제외
   name: build-output
 
 cache:
