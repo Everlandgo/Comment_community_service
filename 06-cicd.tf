@@ -38,7 +38,7 @@ variable "github_branch" {
 # EKS 관련 변수
 variable "eks_cluster_name" {
   type    = string
-  default = "happy-synth-ladybug"
+  default = "test_cluster"
 }
 
 variable "k8s_namespace" {

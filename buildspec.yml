@@ -6,7 +6,7 @@ env:
     REPO_NAME: "comment-service"
     APP_NAME: "comment-service"
     K8S_NAMESPACE: "comment-service"
-    K8S_CLUSTER_NAME: "happy-synth-ladybug"
+    K8S_CLUSTER_NAME: "test_cluster"
     ACCOUNT_ID: "245040175511"
     ECR_REPO_URI: "245040175511.dkr.ecr.ap-northeast-2.amazonaws.com/comment-service"
 
