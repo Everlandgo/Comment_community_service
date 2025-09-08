@@ -38,7 +38,7 @@ variable "github_branch" {
 # EKS 관련 변수
 variable "eks_cluster_name" {
   type    = string
-  default = "test_cluster"
+  default = "karina"
 }
 
 variable "k8s_namespace" {
@@ -366,6 +366,7 @@ resource "aws_eks_access_policy_association" "cb_admin" {
   }
 }
 
+
 # ---------------------------
 # 출력
 # ---------------------------
@@ -384,3 +385,4 @@ output "codebuild_role_arn" {
 output "codepipeline_role_arn" {
   value = aws_iam_role.codepipeline.arn
 }
+
