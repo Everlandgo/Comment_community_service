@@ -62,7 +62,7 @@ phases:
       - 'echo "External Secrets Operator 설치 중..."'
       - 'helm repo add external-secrets https://charts.external-secrets.io'
       - 'helm repo update'
-      - 'helm upgrade --install external-secrets external-secrets/external-secrets --namespace external-secrets-system --create-namespace --set webhook.enabled=false'
+      - 'helm upgrade --install external-secrets external-secrets/external-secrets --namespace external-secrets-system --create-namespace'
       - 'echo "External Secrets Operator 설치 완료 대기..."'
       - 'sleep 60'
       - 'kubectl get pods -n external-secrets-system'
