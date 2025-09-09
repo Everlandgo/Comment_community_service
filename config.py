@@ -16,7 +16,7 @@ class Config:
     SESSION_COOKIE_SAMESITE = 'Lax'
     
     # 데이터베이스 설정 - Docker 환경에서는 mysql 서비스명 사용
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or f"mysql+pymysql://{os.environ.get('DB_USER', 'root')}:{os.environ.get('DB_PASSWORD', 'password')}@{os.environ.get('DB_HOST', 'mysql')}:{os.environ.get('DB_PORT', '3306')}/{os.environ.get('DB_NAME', 'commentdb')}"
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # AWS Cognito 설정
@@ -29,9 +29,8 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     
     # 서비스 설정
-    USER_SERVICE_URL = os.environ.get('USER_SERVICE_URL', 'http://localhost:8081')
-    POST_SERVICE_URL = os.environ.get('POST_SERVICE_URL', 'http://localhost:8082')
-    ENVIRONMENT = os.environ.get('ENVIRONMENT', 'development')
+    POST_SERVICE_URL = os.environ.get('POST_SERVICE_URL', 'http://post-service:8082')
+    ENVIRONMENT = os.environ.get('ENVIRONMENT', 'production')
 
 class DevelopmentConfig(Config):
     """개발 환경 설정"""

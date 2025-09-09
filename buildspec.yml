@@ -2,13 +2,13 @@ version: 0.2
 
 env:
   variables:
-    AWS_DEFAULT_REGION: "ap-northeast-2"
-    REPO_NAME: "comment-service"
-    APP_NAME: "comment-service"
-    K8S_NAMESPACE: "comment-service"
-    K8S_CLUSTER_NAME: "karina"
-    ACCOUNT_ID: "245040175511"
-    ECR_REPO_URI: "245040175511.dkr.ecr.ap-northeast-2.amazonaws.com/comment-service"
+    AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+    REPO_NAME: $REPO_NAME
+    APP_NAME: $APP_NAME
+    K8S_NAMESPACE: $K8S_NAMESPACE
+    K8S_CLUSTER_NAME: $K8S_CLUSTER_NAME
+    ACCOUNT_ID: $ACCOUNT_ID
+    ECR_REPO_URI: $ECR_REPO_URI
 
 phases:
   pre_build:

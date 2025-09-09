@@ -31,11 +31,11 @@ def create_app(config_class=None):
 
     # CORS 설정
     CORS(app,
-         origins=["http://localhost:3000", "http://localhost:8080"],
-         methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-         allow_headers=["Content-Type", "Authorization"],
-         supports_credentials=True,
-         max_age=86400)
+     origins=["https://www.hhottdogg.shop/"],
+     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True,
+     max_age=86400)
 
     # 데이터베이스 초기화
     db.init_app(app)

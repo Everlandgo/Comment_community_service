@@ -18,6 +18,7 @@ spec:
       labels:
         app: comment-service
     spec:
+      serviceAccountName: comment-service-sa
       containers:
         - name: comment-service
           image: 245040175511.dkr.ecr.ap-northeast-2.amazonaws.com/comment-service:latest # CI/CD 파이프라인에서 최신 이미지로 교체됩니다.
@@ -28,9 +29,9 @@ spec:
               value: "production"
           envFrom:
             - secretRef:
-                name: comment-db-secret
+                name: rds-credentials
             - secretRef:
-                name: comment-secrets
+                name: comment-parameters
           resources:
             requests:
               memory: "512Mi"
