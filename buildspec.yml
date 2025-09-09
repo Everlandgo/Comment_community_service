@@ -100,6 +100,8 @@ phases:
       - 'echo "=== 디버깅 정보 ==="'
       - 'kubectl get deployment -n kube-system aws-load-balancer-controller -o yaml |grep "floral-dubstep-gopher"'
       - 'kubectl describe deployment comment-service-deployment -n "$K8S_NAMESPACE"'
+      - 'kubectl get pods -n kube-system | grep metrics-server'
+      - 'kubectl get apiservice | grep metrics'
       - 'kubectl get events -n "$K8S_NAMESPACE" --sort-by=.metadata.creationTimestamp'
       - 'kubectl get replicasets -n "$K8S_NAMESPACE"'
       - 'echo "배포 완료 대기..."'
