@@ -50,6 +50,11 @@ phases:
       - 'aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name "$K8S_CLUSTER_NAME"'
       - 'echo "kubectl 버전 확인..."'
       - 'kubectl version --client'
+      - 'echo "EKS 클러스터 노드 상태 확인..."'
+      - 'kubectl get nodes -o wide'
+      - 'kubectl get nodes --show-labels'
+      - 'echo "클러스터 정보 확인..."'
+      - 'kubectl cluster-info'
       - 'echo "네임스페이스 확인/생성 중..."'
       - 'kubectl create namespace "$K8S_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -'
       - 'echo "Kubernetes 매니페스트 업데이트..."'
@@ -66,6 +71,9 @@ phases:
       - 'kubectl rollout status deployment/"$APP_NAME"-deployment -n "$K8S_NAMESPACE" --timeout=300s'
       - 'echo "=== 최종 배포 상태 ==="'
       - 'kubectl get all -n "$K8S_NAMESPACE"'
+      - 'echo "=== 노드 상태 최종 확인 ==="'
+      - 'kubectl get nodes -o wide'
+      - 'kubectl describe nodes | grep -A 5 "Conditions:"'
       - 'echo "=== 배포 완료 ==="'
 
 artifacts:
