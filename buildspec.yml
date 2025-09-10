@@ -88,7 +88,7 @@ phases:
       - 'echo "모든 노드에 라벨 추가 (Ready/NotReady 무관)..."'
       - 'for node in $(kubectl get nodes -o jsonpath="{.items[*].metadata.name}"); do echo "노드 $node 에 라벨 추가"; kubectl label node $node ready-for-deployment=true --overwrite; done'
       - 'echo "deployment.yaml에 NodeSelector + Tolerations 추가..."'
-      - 'sed -i "/serviceAccountName: comment-service-sa/a\\      nodeSelector:\\n        ready-for-deployment: \"true\"\\n      tolerations:\\n      - key: node.kubernetes.io/not-ready\\n        operator: Exists\\n        effect: NoSchedule\\n      - key: node.kubernetes.io/unreachable\\n        operator: Exists\\n        effect: NoSchedule" k8s/deployment.yaml'
+      - 'sed -i "/serviceAccountName: eks-service-role/a\\      nodeSelector:\\n        ready-for-deployment: \"true\"\\n      tolerations:\\n      - key: node.kubernetes.io/not-ready\\n        operator: Exists\\n        effect: NoSchedule\\n      - key: node.kubernetes.io/unreachable\\n        operator: Exists\\n        effect: NoSchedule" k8s/deployment.yaml'
       - 'echo "수정된 deployment.yaml 확인..."'
       - 'grep -A 10 "nodeSelector:" k8s/deployment.yaml'
       - 'echo "EKS에 배포 중..."'
