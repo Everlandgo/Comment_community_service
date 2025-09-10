@@ -38,7 +38,7 @@ variable "github_branch" {
 # EKS 관련 변수
 variable "eks_cluster_name" {
   type    = string
-  default = "karina"
+  default = "floral-dubstep-gopher"
 }
 
 variable "k8s_namespace" {
@@ -161,13 +161,13 @@ resource "aws_codebuild_project" "build" {
     }
 
     environment_variable {
-      name  = "ECR_REPO_URI"
-      value = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/comment-service"
+      name  = "REPO_NAME"
+      value = "comment-service"
     }
 
     environment_variable {
-      name  = "K8S_CLUSTER_NAME"
-      value = var.eks_cluster_name
+      name  = "APP_NAME"
+      value = "comment-service"
     }
 
     environment_variable {
@@ -176,8 +176,18 @@ resource "aws_codebuild_project" "build" {
     }
 
     environment_variable {
-      name  = "REPO_NAME"
-      value = "comment-service"
+      name  = "K8S_CLUSTER_NAME"
+      value = var.eks_cluster_name
+    }
+
+    environment_variable {
+      name  = "ACCOUNT_ID"
+      value = data.aws_caller_identity.current.account_id
+    }
+
+    environment_variable {
+      name  = "ECR_REPO_URI"
+      value = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/comment-service"
     }
   }
 
