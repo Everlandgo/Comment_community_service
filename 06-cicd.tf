@@ -118,10 +118,12 @@ data "aws_iam_policy_document" "cb_policy" {
     actions = [
       "eks:DescribeCluster",
       "eks:ListClusters",
-      "eks:UpdateKubeconfig"
+      "eks:UpdateKubeconfig",
+      "eks:DescribeClusterVersions"
     ]
     resources = [
-      "arn:aws:eks:${var.region}:${data.aws_caller_identity.current.account_id}:cluster/${var.eks_cluster_name}"
+      "arn:aws:eks:${var.region}:${data.aws_caller_identity.current.account_id}:cluster/${var.eks_cluster_name}",
+      "arn:aws:eks:${var.region}:${data.aws_caller_identity.current.account_id}:*"
     ]
   }
 
@@ -129,6 +131,20 @@ data "aws_iam_policy_document" "cb_policy" {
     sid     = "IAMPassRole"
     actions = ["iam:PassRole"]
     resources = ["*"]
+  }
+
+  statement {
+    sid = "IAMOIDCProvider"
+    actions = [
+      "iam:GetOpenIDConnectProvider",
+      "iam:CreateOpenIDConnectProvider",
+      "iam:DeleteOpenIDConnectProvider",
+      "iam:TagOpenIDConnectProvider",
+      "iam:UntagOpenIDConnectProvider"
+    ]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/*"
+    ]
   }
 }
 
