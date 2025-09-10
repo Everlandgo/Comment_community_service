@@ -10,6 +10,11 @@ metadata:
     app: comment-service
 spec:
   replicas: 1 # HPA가 동적으로 스케일링하므로 기본값 1로 설정
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
   selector:
     matchLabels:
       app: comment-service
