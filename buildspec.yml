@@ -64,7 +64,7 @@ phases:
       - 'helm repo update'
       - 'helm upgrade --install external-secrets external-secrets/external-secrets --namespace external-secrets-system --create-namespace --set webhook.port=9443'
       - 'echo "External Secrets Operator 설치 완료 대기..."'
-      - 'sleep 60'
+      - 'sleep 150'
       - 'kubectl get pods -n external-secrets-system'
       - 'echo "CRD 설치 확인 및 대기..."'
       - 'kubectl get crd | grep external-secrets || echo "CRD 설치 중..."'
