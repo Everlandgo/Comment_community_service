@@ -68,7 +68,7 @@ phases:
       - 'kubectl get pods -n external-secrets-system'
       - 'echo "Secrets Store CSI Driver Provider 설치 중..."'
       - 'kubectl apply -f https://raw.githubusercontent.com/aws/secrets-store-csi-driver-provider-aws/main/deployment/aws-provider-installer.yaml'
-      - 'kubectl wait --for=condition=ready pod -l app=secrets-store-csi-driver-provider-aws -n kube-system --timeout=100s'
+      - 'kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=secrets-store-csi-driver-provider-aws -n kube-system --timeout=100s'
       - 'echo "OIDC Provider 설정 중..."'
       - 'aws iam list-open-id-connect-providers --query "OpenIDConnectProviderList[?contains(Arn, `oidc.eks.$AWS_DEFAULT_REGION.amazonaws.com`)]" --output text | grep -q "oidc.eks.$AWS_DEFAULT_REGION.amazonaws.com" && echo "OIDC Provider가 이미 존재합니다" || eksctl utils associate-iam-oidc-provider --cluster "$K8S_CLUSTER_NAME" --region $AWS_DEFAULT_REGION --approve'
       - 'echo "ServiceAccount에 IAM Role 연결 중..."'
