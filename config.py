@@ -15,8 +15,28 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     
-    # 데이터베이스 설정 - Docker 환경에서는 mysql 서비스명 사용
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    # 데이터베이스 설정 - RDS 연결을 위한 DATABASE_URL 생성
+    @staticmethod
+    def get_database_uri():
+        """DATABASE_URL 환경변수가 있으면 사용, 없으면 개별 DB 환경변수로 조합"""
+        database_url = os.environ.get('DATABASE_URL')
+        if database_url:
+            return database_url
+        
+        # 개별 환경변수로부터 DATABASE_URL 생성
+        db_host = os.environ.get('DB_HOST')
+        db_user = os.environ.get('DB_USER')
+        db_password = os.environ.get('DB_PASSWORD')
+        db_name = os.environ.get('DB_NAME')
+        db_port = os.environ.get('DB_PORT', '3306')
+        
+        if all([db_host, db_user, db_password, db_name]):
+            return f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+        
+        # 기본값 (개발용)
+        return 'sqlite:///comment.db'
+    
+    SQLALCHEMY_DATABASE_URI = get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # AWS Cognito 설정
