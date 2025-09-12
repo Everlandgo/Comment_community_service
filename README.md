@@ -36,25 +36,16 @@ K8S_NAMESPACE=comment-service
 
 ```bash
 # 데이터베이스 설정
-DB_HOST=your-rds-endpoint
-DB_USER=your-db-username
-DB_PASSWORD=your-db-password
-DB_NAME=your-db-name
-DB_PORT=3306
+DATABASE_URL=mysql+pymysql://user:password@host:port/database
 
 # 애플리케이션 설정
 SECRET_KEY=your-secret-key
-JWT_SECRET_KEY=your-jwt-secret-key
-ENVIRONMENT=production
 
 # AWS Cognito 설정
 COGNITO_USER_POOL_ID=your-user-pool-id
 COGNITO_CLIENT_ID=your-client-id
 COGNITO_REGION=ap-northeast-2
 
-# 서비스 URL
-USER_SERVICE_URL=http://user-service:8081
-POST_SERVICE_URL=http://post-service:8082
 ```
 
 #### Docker 빌드 및 실행
@@ -65,12 +56,8 @@ docker build -t comment-service .
 
 # Docker 컨테이너 실행
 docker run -p 8083:8083 \
-  -e DB_HOST=your-rds-endpoint \
-  -e DB_USER=your-db-username \
-  -e DB_PASSWORD=your-db-password \
-  -e DB_NAME=your-db-name \
+  -e DATABASE_URL=mysql+pymysql://user:password@host:port/database \
   -e SECRET_KEY=your-secret-key \
-  -e JWT_SECRET_KEY=your-jwt-secret-key \
   comment-service
 ```
 
@@ -106,12 +93,8 @@ GitHub Secrets에 다음 값들을 설정하세요:
 
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
-- `DB_HOST`
-- `DB_USER`
-- `DB_PASSWORD`
-- `DB_NAME`
+- `DATABASE_URL`
 - `SECRET_KEY`
-- `JWT_SECRET_KEY`
 - `COGNITO_USER_POOL_ID`
 - `COGNITO_CLIENT_ID`
 

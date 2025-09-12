@@ -44,12 +44,8 @@ class Config:
     COGNITO_CLIENT_ID = os.environ.get('COGNITO_CLIENT_ID')
     
     # JWT 설정
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=5)
     
-    # 서비스 설정
-    POST_SERVICE_URL = os.environ.get('POST_SERVICE_URL', 'http://post-service:8082')
-    ENVIRONMENT = os.environ.get('ENVIRONMENT', 'production')
 
 class DevelopmentConfig(Config):
     """개발 환경 설정"""
