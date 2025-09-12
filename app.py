@@ -31,7 +31,7 @@ def create_app(config_class=None):
 
     # CORS 설정
     CORS(app,
-     origins=["https://www.hhottdogg.shop/"],
+     origins=["https://www.hhottdogg.shop", "https://hhottdogg.shop"],
      methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"],
      supports_credentials=True,
