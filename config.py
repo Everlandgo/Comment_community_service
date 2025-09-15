@@ -30,7 +30,7 @@ class Config:
     
     # 세션 설정 - 탭 종료 시 자동 로그아웃을 위해 False로 설정
     SESSION_PERMANENT = False
-    SESSION_COOKIE_SECURE = False  # 개발 환경에서는 False, 운영 환경에서는 True
+    SESSION_COOKIE_SECURE = True  # HTTPS 환경에서는 True로 설정
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     
