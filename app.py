@@ -41,9 +41,30 @@ def create_app(config_class=None):
     db.init_app(app)
     Migrate(app, db)
 
-    # 테이블 생성 - 연결 실패 시에도 애플리케이션은 계속 실행
+    # 데이터베이스 및 테이블 생성 - 연결 실패 시에도 애플리케이션은 계속 실행
     with app.app_context():
         try:
+            # 데이터베이스 자동 생성
+            database_url = app.config['SQLALCHEMY_DATABASE_URI']
+            if 'mysql' in database_url:
+                # MySQL 데이터베이스 자동 생성
+                from sqlalchemy import create_engine
+                from urllib.parse import urlparse
+                
+                parsed_url = urlparse(database_url)
+                db_name = parsed_url.path[1:]  # '/' 제거
+                
+                # 데이터베이스명을 제거한 연결 URL 생성
+                base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+                
+                # 기본 연결로 데이터베이스 생성
+                engine = create_engine(base_url)
+                with engine.connect() as conn:
+                    conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {db_name}"))
+                    conn.commit()
+                
+                logger.info(f"Database '{db_name}' created successfully")
+            
             # 데이터베이스 연결 테스트
             db.session.execute(text('SELECT 1'))
             logger.info("Database connection test successful")
