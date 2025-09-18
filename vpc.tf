@@ -258,24 +258,49 @@ resource "aws_lb" "alb" {
   }
 }
 
-resource "aws_lb_target_group" "tg" {
-  name     = "community-tg"
+# Post Service Target Group
+resource "aws_lb_target_group" "post_tg" {
+  name     = "post-tg"
   port     = 8082
   protocol = "HTTP"
   vpc_id   = aws_vpc.community_vpc.id
 
   health_check {
-    path                = "/"
+    path                = "/health"
     protocol            = "HTTP"
     interval            = 30
     timeout             = 5
-    healthy_threshold   = 5
-    unhealthy_threshold = 2
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
     matcher             = "200-399"
   }
 
   tags = {
-    Name = "community-tg"
+    Name = "post-tg"
+    Service = "post-service"
+  }
+}
+
+# Comment Service Target Group
+resource "aws_lb_target_group" "comment_tg" {
+  name     = "comment-tg"
+  port     = 8083
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.community_vpc.id
+
+  health_check {
+    path                = "/health"
+    protocol            = "HTTP"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    matcher             = "200-399"
+  }
+
+  tags = {
+    Name = "comment-tg"
+    Service = "comment-service"
   }
 }
 
@@ -294,32 +319,53 @@ resource "aws_lb_listener" "http" {
   }
 }
 
+# HTTPS 리스너 - ACM 인증서가 미국 리전이라서 주석처리
+# 리스너 패턴:
+# Post Service: "/api/v1/posts", "/api/v1/posts/*"
+# Comment Service: "/api/v1/comments", "/api/v1/comments/*", "/api/v1/posts/*/comments", "/health"
 # resource "aws_lb_listener" "https" {
 #   load_balancer_arn = aws_lb.alb.arn
 #   port              = "443"
 #   protocol          = "HTTPS"
-#   ssl_policy        = "ELBSecurityPolicy-2016-08"
-#   certificate_arn   = "arn:aws:acm:ap-northeast-2:123456789012:certificate/your-cert-id"
-
-
+#   ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2019-07"
+#   # certificate_arn   = "arn:aws:acm:ap-northeast-2:245040175511:certificate/your-cert-id"
+# 
 #   default_action {
 #     type             = "forward"
-#     target_group_arn = aws_lb_target_group.tg.arn
+#     target_group_arn = aws_lb_target_group.comment_tg.arn
 #   }
 # }
 
-# resource "aws_lb_listener_rule" "path_based_routing" {
+# Post Service Listener Rule - HTTP로 처리
+# resource "aws_lb_listener_rule" "post_service" {
 #   listener_arn = aws_lb_listener.https.arn
 #   priority     = 100
-
+# 
 #   action {
 #     type             = "forward"
-#     target_group_arn = aws_lb_target_group.tg.arn
+#     target_group_arn = aws_lb_target_group.post_tg.arn
 #   }
-
+# 
 #   condition {
 #     path_pattern {
-#       values = ["/api/*"]
+#       values = ["/api/v1/posts", "/api/v1/posts/*"]
+#     }
+#   }
+# }
+
+# Comment Service Listener Rule - HTTPS 리스너가 주석처리되어서 주석처리
+# resource "aws_lb_listener_rule" "comment_service" {
+#   listener_arn = aws_lb_listener.https.arn
+#   priority     = 100
+# 
+#   action {
+#     type             = "forward"
+#     target_group_arn = aws_lb_target_group.comment_tg.arn
+#   }
+# 
+#   condition {
+#     path_pattern {
+#       values = ["/api/v1/comments", "/api/v1/comments/*", "/api/v1/posts/*/comments", "/health"]
 #     }
 #   }
 # }
